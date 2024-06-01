@@ -44,13 +44,37 @@ void switchISR() {
   switchChange = true;
 }
 // Dice array
-int dicePixels[6][6] = {  // Pixel pattern for dice roll
+int dicePixelsD6[6][6] = {  // Pixel pattern for dice roll
   { 2, 0, 0, 0, 0, 0 } ,      // Roll = 1
   { 4, 9, 0, 0, 0, 0 } ,      //        2
   { 0, 4, 7, 0, 0, 0 } ,      //        3
   { 1, 3, 6, 8, 0, 0 } ,      //        4
   { 0, 2, 4, 5, 9, 0 } ,      //        5
   { 0, 2, 4, 5, 7, 9 } ,      //        6
+};
+
+int dicePixelsD8[8][8] = {  // Pixel pattern for dice roll
+  { 2, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
+  { 4, 9, 0, 0, 0, 0, 0, 0 } ,      //        2
+  { 0, 4, 7, 0, 0, 0, 0, 0 } ,      //        3
+  { 1, 3, 6, 8, 0, 0, 0, 0 } ,      //        4
+  { 0, 2, 4, 5, 9, 0, 0, 0 } ,      //        5
+  { 0, 2, 4, 5, 7, 9, 0, 0 } ,      //        6
+  { 0, 1, 4, 5, 6, 8, 9, 0 } ,      //        7
+  { 0, 1, 3, 4, 5, 6, 8, 9 } ,      //        8
+};
+
+int dicePixelsD10[10][10] = {  // Pixel pattern for dice roll
+  { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
+  { 4, 9, 0, 0, 0, 0, 0, 0, 0, 0 } ,      //        2
+  { 0, 4, 7, 0, 0, 0, 0, 0, 0, 0 } ,      //        3
+  { 1, 3, 6, 8, 0, 0, 0, 0, 0, 0 } ,      //        4
+  { 0, 2, 4, 5, 9, 0, 0, 0, 0, 0 } ,      //        5
+  { 0, 2, 4, 5, 7, 9, 0, 0, 0, 0 } ,      //        6
+  { 0, 1, 4, 5, 6, 8, 9, 0, 0, 0 } ,      //        7
+  { 0, 1, 3, 4, 5, 6, 8, 9, 0, 0 } ,      //        8
+  { 0, 1, 2, 3, 4, 5, 6, 8, 9, 0 } ,      //        9
+  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 } ,      //        10
 };
 // Monster arrays
 
@@ -92,6 +116,10 @@ void loop() {
   }
   }
   if (gameStarted) {
+    if (rightButtonPressed) {
+      rollDice(10);
+      rightButtonPressed = false;
+    }
     if (!endlessMode) { // Story mode
     
   }
@@ -108,7 +136,7 @@ void loop() {
 // Author: Carter Nelson
 // MIT License (https://opensource.org/licenses/MIT)
 
-int rollDice() {
+int rollDice(int maxRoll) {
   randomSeed(CircuitPlayground.lightSensor());
    bool loop = false;
 
@@ -118,7 +146,7 @@ int rollDice() {
   }
   
   // Compute a random number from 1 to 6
-  rollNumber = random(1,7);
+  rollNumber = random(1, maxRoll+1);
 
   if (!(animationTimer.isExpired())) {
     loop = true;
@@ -126,14 +154,29 @@ int rollDice() {
 
   // Display status on NeoPixels
   while (loop) {
-    int animationRollNumber = random(1,7);
+    int animationRollNumber = random(1,maxRoll+1);
     // Make some noise and show the dice roll number
     //CircuitPlayground.playTone(random(400,2000), 20, false);        
     CircuitPlayground.clearPixels();
+    switch (maxRoll) {
+    case 6:
     for (int p=0; p<animationRollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixels[animationRollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD6[animationRollNumber-1][p], DICE_COLOR);
     }    
-    delay(200);    
+    break;
+    case 8:
+    for (int p=0; p<animationRollNumber; p++) {
+      CircuitPlayground.setPixelColor(dicePixelsD8[animationRollNumber-1][p], DICE_COLOR);
+    }    
+    break;
+    case 10:
+    for (int p=0; p<animationRollNumber; p++) {
+      CircuitPlayground.setPixelColor(dicePixelsD10[animationRollNumber-1][p], DICE_COLOR);
+    }    
+    break;
+    }
+    
+    delay(100);    
     if (animationTimer.isExpired()) {
       loop = false;
     }
@@ -142,8 +185,22 @@ int rollDice() {
   if (animationTimer.isExpired()) {
     // Show the dice roll number
     CircuitPlayground.clearPixels();
+    switch (maxRoll) {
+    case 6:
     for (int p=0; p<rollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixels[rollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD6[rollNumber-1][p], DICE_COLOR);
+    }
+    break;
+    case 8:
+    for (int p=0; p<rollNumber; p++) {
+      CircuitPlayground.setPixelColor(dicePixelsD8[rollNumber-1][p], DICE_COLOR);
+    }
+    break;
+    case 10:
+    for (int p=0; p<rollNumber; p++) {
+      CircuitPlayground.setPixelColor(dicePixelsD10[rollNumber-1][p], DICE_COLOR);
+    }
+    break;
     }
   }
 }
