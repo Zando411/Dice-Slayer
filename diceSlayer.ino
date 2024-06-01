@@ -1,10 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////
-// Circuit Playground D6 Dice
-// 
-// Roll them bones.
-//
-// Author: Carter Nelson
-// MIT License (https://opensource.org/licenses/MIT)
+
 
 #include <Adafruit_CircuitPlayground.h>
 #include <AsyncDelay.h>
@@ -48,6 +42,14 @@ void loop() {
   }
   Serial.println(rollNumber);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Circuit Playground Dice
+// 
+// Modified to be used with a button input and to be only called once rather than looped.
+//
+// Author: Carter Nelson
+// MIT License (https://opensource.org/licenses/MIT)
 
 int rollDice() {
   randomSeed(CircuitPlayground.lightSensor());
