@@ -1,31 +1,119 @@
-
-
 #include <Adafruit_CircuitPlayground.h>
 #include <AsyncDelay.h>
 
 AsyncDelay animationTimer;
 
+int rollDiceAnimation(int maxRoll, int diceColor);
 
-// player variables/upgrades (inital values are defaults)
-int playerMaxHP = 3;
-int playerCurrentHP = playerMaxHP;
-int playerMaxRoll = 6;
-int playerRollPlus = 0;
-bool rerollPerk = false;
-bool remainingReroll = false;
-int playerRoll;
+// PLayer Class
 
-// current monster variables
-int monsterHP = 3;
-int monsterMaxRoll = 6;
-int monsterRollPlus = 0;
-int monsterRoll;
+class Player {
+  public:
+  // Constructor
+  Player(int maxHP, int maxRoll, int rollPlus):
+  maxHP(maxHP), currentHP(maxHP), maxRoll(maxRoll), rollPlus(rollPlus), rerollPerk(false), remainingReroll(false) {}
+
+
+  void takeDamage(int damage) { // method to deal damage to player
+    currentHP -= damage;
+    if (currentHP < 0) currentHP = 0;
+  }
+
+  void heal(int amount) { // method to heal player
+    currentHP += amount;
+    if (currentHP > maxHP) currentHP = maxHP; 
+  }
+
+  int rollDice() {
+    return rollDiceAnimation(maxRoll, diceColor) + rollPlus;
+  }
+
+  int getCurrentHP() {
+    return currentHP;
+  }
+
+  int getMaxHP() {
+    return maxHP;
+  }
+
+  int getMaxRoll() {
+    return maxRoll;
+  }
+
+  int getRollPlus() {
+    return rollPlus;
+  }
+
+  bool hasRerollPerk() {
+    return rerollPerk;
+  }
+
+  void setRerollPerk(bool perk) {
+    rerollPerk = perk;
+  }
+
+  bool canReroll() {
+    return remainingReroll;
+  }
+
+  void setRemainingReroll(bool reroll) {
+    remainingReroll = reroll;
+  }
+
+
+  private:
+  int maxHP;
+  int currentHP;
+  int maxRoll;
+  int rollPlus;
+  bool rerollPerk;
+  bool remainingReroll;
+  int diceColor = 0xEA6292;
+};
+
+
+// monster class
+
+class Monster {
+  public:
+  // Constructor
+  Monster(int hp, int maxRoll, int rollPlus):
+  hp(hp), maxRoll(maxRoll), rollPlus(rollPlus) {}
+
+
+  void takeDamage(int damage) { // method to deal damage to monster
+    hp -= damage;
+    if (hp < 0) hp = 0;
+  }
+
+  int rollDice() {
+    return rollDiceAnimation(maxRoll, diceColor) + rollPlus;
+  }
+
+  int getHP() {
+    return hp;
+  }
+
+  int getMaxRoll() {
+    return maxRoll;
+  }
+
+  int getRollPlus() {
+    return rollPlus;
+  }
+
+  private:
+  int hp;
+  int maxRoll;
+  int rollPlus;
+  int diceColor = 0xF10404;
+};
+
 
 // function variables
-#define DICE_COLOR          0xEA6292    // Dice digits color
-bool rightButtonPressed;
-bool leftButtonPressed;
-bool switchChange;
+volatile bool rightButtonPressed;
+volatile bool leftButtonPressed;
+volatile bool switchChange;
 int rollNumber;
 int rightButtonPin = 5;
 int leftButtonPin = 4;
@@ -33,6 +121,9 @@ int switchPin = 7;
 bool endlessMode = false;
 bool gameStarted = false;
 bool combatOver = false;
+int roomNumber = 0;
+
+Player player(3,6,0); // initialize player
 // ISR
 void rightISR() {
   rightButtonPressed = true;
@@ -76,7 +167,6 @@ int dicePixelsD10[10][10] = {  // Pixel pattern for dice roll
   { 0, 1, 2, 3, 4, 5, 6, 8, 9, 0 } ,      //        9
   { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 } ,      //        10
 };
-// Monster arrays
 
 void setup() {
   Serial.begin(9600);
@@ -116,12 +206,18 @@ void loop() {
   }
   }
   if (gameStarted) {
+    while (!rightButtonPressed); // wait for user input
     if (rightButtonPressed) {
-      rollDice(10);
+      int rolled = player.rollDice();
+      Serial.println(rolled);
       rightButtonPressed = false;
     }
     if (!endlessMode) { // Story mode
-    
+      if (!combatOver) {
+        // roomNumber++;
+        // Serial.print("You enter into room number: ");
+        // Serial.print(roomNumber);
+      }
   }
   }
   
@@ -136,7 +232,7 @@ void loop() {
 // Author: Carter Nelson
 // MIT License (https://opensource.org/licenses/MIT)
 
-int rollDice(int maxRoll) {
+int rollDiceAnimation(int maxRoll, int diceColor) {
   randomSeed(CircuitPlayground.lightSensor());
    bool loop = false;
 
@@ -161,17 +257,17 @@ int rollDice(int maxRoll) {
     switch (maxRoll) {
     case 6:
     for (int p=0; p<animationRollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD6[animationRollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD6[animationRollNumber-1][p], diceColor);
     }    
     break;
     case 8:
     for (int p=0; p<animationRollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD8[animationRollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD8[animationRollNumber-1][p], diceColor);
     }    
     break;
     case 10:
     for (int p=0; p<animationRollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD10[animationRollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD10[animationRollNumber-1][p], diceColor);
     }    
     break;
     }
@@ -188,19 +284,20 @@ int rollDice(int maxRoll) {
     switch (maxRoll) {
     case 6:
     for (int p=0; p<rollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD6[rollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD6[rollNumber-1][p], diceColor);
     }
     break;
     case 8:
     for (int p=0; p<rollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD8[rollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD8[rollNumber-1][p], diceColor);
     }
     break;
     case 10:
     for (int p=0; p<rollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD10[rollNumber-1][p], DICE_COLOR);
+      CircuitPlayground.setPixelColor(dicePixelsD10[rollNumber-1][p], diceColor);
     }
     break;
     }
   }
+  return rollNumber;
 }
