@@ -7,7 +7,7 @@ On program start, the player will be given the choice between story mode and end
 ## Story mode: 
 - Progress through 5 rooms that increase in difficulty. 
 - Every room contains a monster to fight
-- Players will roll dice against the monster, whichever rolls higher wins
+- Players will roll dice against the monster, whichever rolls higher wins. The player wins ties.
 - Whoever rolls lower loses one health, and whoever reaches 0 first loses!
 - If the player loses, their run is over and they must restart the game. If the monster loses, the player progresses to the next room
 - As players progress they will gain unique upgrades that are randomized, making every run different. 
