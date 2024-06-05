@@ -23,6 +23,7 @@ bool combatOver = false;
 int roomNumber = 1;
 bool enteringRoom = true;
 bool gameOver = false;
+bool mute = false;
 
 
 // upgrades
@@ -61,6 +62,7 @@ class Player {
   }
   
   int rollDice() {
+    resetButtons();
     int roll = rollDiceAnimation(maxRoll, diceColor);
     Serial.print("You rolled a ");
     Serial.print(roll);
@@ -80,6 +82,8 @@ class Player {
       Serial.println("If you would like to roll again and add to your total, press the left button.");
       delay(500);
       Serial.println("If you would like to continue without adding to your roll, press the right button.");
+      resetButtons();
+      delay(50);
       while (!leftButtonPressed || !rightButtonPressed) {
         if (leftButtonPressed && remainingReroll > 0) {
           resetButtons();
@@ -232,25 +236,25 @@ void switchISR() {
   switchChange = true;
 }
 // Dice array
-int dicePixelsD6[6][6] = {  // Pixel pattern for dice roll
-  { 2, 0, 0, 0, 0, 0 } ,      // Roll = 1
-  { 4, 9, 0, 0, 0, 0 } ,      //        2
-  { 0, 4, 7, 0, 0, 0 } ,      //        3
-  { 1, 3, 6, 8, 0, 0 } ,      //        4
-  { 0, 2, 4, 5, 9, 0 } ,      //        5
-  { 0, 2, 4, 5, 7, 9 } ,      //        6
-};
+// int dicePixelsD6[6][6] = {  // Pixel pattern for dice roll
+//   { 2, 0, 0, 0, 0, 0 } ,      // Roll = 1
+//   { 4, 9, 0, 0, 0, 0 } ,      //        2
+//   { 0, 4, 7, 0, 0, 0 } ,      //        3
+//   { 1, 3, 6, 8, 0, 0 } ,      //        4
+//   { 0, 2, 4, 5, 9, 0 } ,      //        5
+//   { 0, 2, 4, 5, 7, 9 } ,      //        6
+// };
 
-int dicePixelsD8[8][8] = {  // Pixel pattern for dice roll
-  { 2, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
-  { 4, 9, 0, 0, 0, 0, 0, 0 } ,      //        2
-  { 0, 4, 7, 0, 0, 0, 0, 0 } ,      //        3
-  { 1, 3, 6, 8, 0, 0, 0, 0 } ,      //        4
-  { 0, 2, 4, 5, 9, 0, 0, 0 } ,      //        5
-  { 0, 2, 4, 5, 7, 9, 0, 0 } ,      //        6
-  { 0, 1, 4, 5, 6, 8, 9, 0 } ,      //        7
-  { 0, 1, 3, 4, 5, 6, 8, 9 } ,      //        8
-};
+// int dicePixelsD8[8][8] = {  // Pixel pattern for dice roll
+//   { 2, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
+//   { 4, 9, 0, 0, 0, 0, 0, 0 } ,      //        2
+//   { 0, 4, 7, 0, 0, 0, 0, 0 } ,      //        3
+//   { 1, 3, 6, 8, 0, 0, 0, 0 } ,      //        4
+//   { 0, 2, 4, 5, 9, 0, 0, 0 } ,      //        5
+//   { 0, 2, 4, 5, 7, 9, 0, 0 } ,      //        6
+//   { 0, 1, 4, 5, 6, 8, 9, 0 } ,      //        7
+//   { 0, 1, 3, 4, 5, 6, 8, 9 } ,      //        8
+// };
 
 int dicePixelsD10[10][10] = {  // Pixel pattern for dice roll
   { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
@@ -360,13 +364,13 @@ void loop() {
         Serial.print("It rolled a ");
         Serial.print(monsterRoll);
         Serial.println("!");
-        delay(2000);
+        delay(1000);
+        resetButtons();
         Serial.println("Press the right button to fight back!");
 
         while (!rightButtonPressed);
         resetButtons();
         int playerRoll = player.rollDice();
-        Serial.println("combat time");
 
         if (playerRoll >= monsterRoll) {
           monster.takeDamage(1);
@@ -403,6 +407,7 @@ void loop() {
         resetButtons();
         roomNumber++; 
         player.setRemainingRerolls(player.getMaxReroll());
+        player.heal(player.getMaxHP());
 
         if (roomNumber > 5) {
           Serial.println("YOU HAVE WON THE GAME!");
@@ -511,28 +516,24 @@ int rollDiceAnimation(int maxRoll, int diceColor) {
     loop = true;
   }
 
+  if (switchChange) {
+    delay(5);
+    mute = digitalRead(switchPin); // set game mode based on switch
+
+    switchChange = false;
+  }
+
   // Display status on NeoPixels
   while (loop) {
     int animationRollNumber = random(1,maxRoll+1);
     // Make some noise and show the dice roll number
-    //CircuitPlayground.playTone(random(400,2000), 20, false);        
+    if (!mute) {
+    //CircuitPlayground.playTone(random(400,2000), 20, false); 
+    Serial.println("muted");
+    } 
     CircuitPlayground.clearPixels();
-    switch (maxRoll) {
-    case 6:
-    for (int p=0; p<animationRollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD6[animationRollNumber-1][p], diceColor);
-    }    
-    break;
-    case 8:
-    for (int p=0; p<animationRollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD8[animationRollNumber-1][p], diceColor);
-    }    
-    break;
-    case 10:
     for (int p=0; p<animationRollNumber; p++) {
       CircuitPlayground.setPixelColor(dicePixelsD10[animationRollNumber-1][p], diceColor);
-    }    
-    break;
     }
     
     delay(100);    
@@ -544,22 +545,8 @@ int rollDiceAnimation(int maxRoll, int diceColor) {
   if (animationTimer.isExpired()) {
     // Show the dice roll number
     CircuitPlayground.clearPixels();
-    switch (maxRoll) {
-    case 6:
-    for (int p=0; p<rollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD6[rollNumber-1][p], diceColor);
-    }
-    break;
-    case 8:
-    for (int p=0; p<rollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD8[rollNumber-1][p], diceColor);
-    }
-    break;
-    case 10:
     for (int p=0; p<rollNumber; p++) {
       CircuitPlayground.setPixelColor(dicePixelsD10[rollNumber-1][p], diceColor);
-    }
-    break;
     }
   }
   return rollNumber;
