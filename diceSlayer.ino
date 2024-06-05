@@ -223,7 +223,7 @@ class Monster {
 
 
 
-Player player(3, 6, 0, 1); // initialize player
+Player player(3, 6, 0, 0); // initialize player
 Monster monster(0, 0, 0); // initalize monster
 // ISR
 void rightISR() {
@@ -279,8 +279,6 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(switchPin), switchISR, CHANGE);
   randomSeed(time(0) + CircuitPlayground.lightSensor());
 
-  player.setRerollPerk(true);
-
   while(!Serial); 
   delay(500);
   Serial.println("Welcome to Dice Slayer!");
@@ -321,23 +319,23 @@ void loop() {
         switch (roomNumber) {
           case 1:
           {
-          monster = Monster(2, 6, 0);
+          monster = Monster(2, 4, 0);
           break;
           }
           
           case 2:
           {
-          monster = Monster(3, 6, 1);
+          monster = Monster(3, 6, 0);
           break;
           }
           case 3:
           {
-          monster = Monster(3, 8, 0);
+          monster = Monster(3, 8, 1);
           break;
           }
           case 4:
           {
-          monster = Monster(4, 6, 1);
+          monster = Monster(4, 6, 2);
           break;
           }
           case 5:
@@ -465,6 +463,7 @@ void loop() {
         case 3:                             // increase max rerolls by 1
         lastValue = player.getMaxReroll();
         player.setMaxReroll(lastValue + 1);
+        player.setRerollPerk(true);
         Serial.println("Your max rerolls have increased by 1.");
         break;
         }
@@ -529,7 +528,6 @@ int rollDiceAnimation(int maxRoll, int diceColor) {
     // Make some noise and show the dice roll number
     if (!mute) {
     //CircuitPlayground.playTone(random(400,2000), 20, false); 
-    Serial.println("muted");
     } 
     CircuitPlayground.clearPixels();
     for (int p=0; p<animationRollNumber; p++) {
