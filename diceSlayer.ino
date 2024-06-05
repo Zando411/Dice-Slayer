@@ -1,10 +1,13 @@
 #include <Adafruit_CircuitPlayground.h>
 #include <AsyncDelay.h>
 #include <time.h>
+#include <string>
+using namespace std;
 
 AsyncDelay animationTimer;
 
 int rollDiceAnimation(int maxRoll, int diceColor);
+void resetButtons();
 
 // function variables
 volatile bool rightButtonPressed;
@@ -18,6 +21,13 @@ bool endlessMode = false;
 bool gameStarted = false;
 bool combatOver = false;
 int roomNumber = 1;
+bool enteringRoom = true;
+bool gameOver = false;
+
+
+// upgrades
+
+String upgradeNames[4] = {"Upgrade die by 2", "Add +1 to roll", "Increase max HP by 1", "Increase max reroll by 1"};
 
 // PLayer Class
 
@@ -38,6 +48,18 @@ class Player {
     if (currentHP > maxHP) currentHP = maxHP; 
   }
 
+  void printStats() {
+    Serial.println("Your current stats are: ");
+    Serial.print("Max HP: ");
+    Serial.println(maxHP);
+    Serial.print("Max Roll: ");
+    Serial.println(maxRoll);
+    Serial.print("Roll Plus: ");
+    Serial.println(rollPlus);
+    Serial.print("Max Rerolls: ");
+    Serial.println(maxReroll);
+  }
+  
   int rollDice() {
     int roll = rollDiceAnimation(maxRoll, diceColor);
     Serial.print("You rolled a ");
@@ -59,8 +81,8 @@ class Player {
       delay(500);
       Serial.println("If you would like to continue without adding to your roll, press the right button.");
       while (!leftButtonPressed || !rightButtonPressed) {
-        if (leftButtonPressed) {
-          rightButtonPressed = false;
+        if (leftButtonPressed && remainingReroll > 0) {
+          resetButtons();
           totalRoll = doReroll(totalRoll);
           leftButtonPressed = false;
           Serial.print("Your new roll total is: ");
@@ -71,13 +93,13 @@ class Player {
             Serial.println("If you want to roll again, press the left button.");
             delay(500);
             Serial.println("If you want to continue, press the right button.");
-          } else if (remainingReroll = 0) {
+          } else if (remainingReroll == 0) {
             Serial.println("You are out of rerolls!");
             delay(500);
             Serial.println("Press the right button to continue.");
           }
       } else if (rightButtonPressed) {
-        rightButtonPressed = false;
+        resetButtons();
         break;
       }
       }
@@ -85,7 +107,7 @@ class Player {
     return totalRoll;
   }
 
-  int getCurrentHP() {
+  int getHP() {
     return currentHP;
   }
 
@@ -108,6 +130,23 @@ class Player {
   bool hasRerollPerk() {
     return rerollPerk;
   }
+
+  void setMaxHP(int newMaxHP) {
+    maxHP = newMaxHP;
+  }
+
+  void setMaxRoll(int newMaxRoll) {
+    maxRoll = newMaxRoll;
+  }
+  
+  void setRollPlus(int newRollPlus) {
+    rollPlus = newRollPlus;
+  }
+
+  void setMaxReroll(int newMaxReroll) {
+    maxReroll = newMaxReroll;
+  }
+
 
   void setRerollPerk(bool perk) {
     rerollPerk = perk;
@@ -180,7 +219,7 @@ class Monster {
 
 
 
-Player player(3, 6, 0, 0); // initialize player
+Player player(3, 6, 0, 1); // initialize player
 Monster monster(0, 0, 0); // initalize monster
 // ISR
 void rightISR() {
@@ -236,6 +275,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(switchPin), switchISR, CHANGE);
   randomSeed(time(0) + CircuitPlayground.lightSensor());
 
+  player.setRerollPerk(true);
+
   while(!Serial); 
   delay(500);
   Serial.println("Welcome to Dice Slayer!");
@@ -262,12 +303,14 @@ void loop() {
     Serial.println("Let the game begin!");
     delay(1000);
     gameStarted = true;
-    rightButtonPressed = false;
+    resetButtons();
   }
   }
   if (gameStarted) {
     if (!endlessMode) { // Story mode
       if (!combatOver) { // if combat is still active
+        if (enteringRoom) {
+        player.setRemainingRerolls(player.getMaxReroll());
         delay(1000);
         Serial.print("You enter into room number: ");
         Serial.println(roomNumber);
@@ -305,7 +348,13 @@ void loop() {
           delay(1000);
           Serial.print(".");
         }
-        Serial.println("and they attack!");
+        Serial.println("and it attacks!");
+        }
+        if (!enteringRoom) {
+          delay(1000);
+          Serial.println("The monster goes for another strike...");
+        }
+        enteringRoom = false;
         int monsterRoll = monster.rollDice();
         while(!animationTimer.isExpired());
         Serial.print("It rolled a ");
@@ -315,19 +364,132 @@ void loop() {
         Serial.println("Press the right button to fight back!");
 
         while (!rightButtonPressed);
-        leftButtonPressed = false;
-        rightButtonPressed = false;
-        player.setRerollPerk(true);
-        player.setRemainingRerolls(5);
+        resetButtons();
         int playerRoll = player.rollDice();
         Serial.println("combat time");
-        while (!rightButtonPressed);
+
+        if (playerRoll >= monsterRoll) {
+          monster.takeDamage(1);
+          Serial.println("You rolled higher than the monster!");
+          delay(1000);
+          Serial.println("You attack the monster and it takes 1 point of damage!");
+          delay(1000);
+          if (monster.getHP() > 0) {
+            Serial.print("The monster has ");
+            Serial.print(monster.getHP());
+            Serial.println(" health remaining.");
+          } else if (monster.getHP() == 0) {
+            Serial.println("You slayed the monster!");
+            combatOver = true;
+          }
+        } else if (monsterRoll > playerRoll) {
+          player.takeDamage(1);
+          Serial.println("The monster rolled higher than you!");
+          delay(1000);
+          Serial.println("The monster attacks you and deals 1 point of damage!");
+          delay(1000);
+          if (player.getHP() > 0) {
+            Serial.print("You have ");
+            Serial.print(player.getHP());
+            Serial.println(" health remaining.");
+          } else if (player.getHP() == 0) {
+            gameOver = true;
+            while (gameOver) {
+            Serial.println("You have died to the monster!");
+            }
+          }
+        } 
+      } else if (combatOver) {
+        resetButtons();
+        roomNumber++; 
+        player.setRemainingRerolls(player.getMaxReroll());
+
+        if (roomNumber > 5) {
+          Serial.println("YOU HAVE WON THE GAME!");
+          gameOver = true;
+          while (gameOver) {
+          Serial.println("game over");
+          delay(1000);
+          }
+        }
+        int lowerBound = 0;
+        if (player.getMaxRoll() == 10) {
+          lowerBound = 1;
+        }
+        int upgradeLeft = random(lowerBound,4);
+        int upgradeRight = random(lowerBound,4);
+        while (upgradeLeft == upgradeRight) {
+          upgradeRight = random(lowerBound,4);
+        }
+
+        Serial.println("As a reward, you are presented the choice of two upgrades: ");
+        Serial.print(upgradeNames[upgradeLeft]);
+        Serial.println("  ---  Select this upgrade with the left button.");
+        Serial.print(upgradeNames[upgradeRight]);
+        Serial.println("  ---  Select this upgrade with the right button.");
         
+        while (!leftButtonPressed && !rightButtonPressed);
+        int upgrade;
+        if (leftButtonPressed) {
+          resetButtons();
+          upgrade = upgradeLeft;
+        }  else if (rightButtonPressed) {
+          resetButtons();
+          upgrade = upgradeRight;
+        }
+        int lastValue;
+        Serial.print("Congratulations! ");
+        switch (upgrade) {
+        case 0:                             // increase player die by 2
+        lastValue = player.getMaxRoll();
+        player.setMaxRoll(lastValue + 2);
+        Serial.print("You now roll a die with ");
+        Serial.print(player.getMaxRoll());
+        Serial.println(" sides!");
+        break;
+        case 1:                             // increase roll plus by 1
+        lastValue = player.getRollPlus();
+        player.setRollPlus(lastValue + 1);
+        Serial.println("You now add an additional point to your roll.");
+        break;
+        case 2:                             // increase max hp by 1
+        lastValue = player.getMaxHP();
+        player.setMaxHP(lastValue + 1);
+        Serial.println("Your max HP has increased by 1.");
+        break;
+        case 3:                             // increase max rerolls by 1
+        lastValue = player.getMaxReroll();
+        player.setMaxReroll(lastValue + 1);
+        Serial.println("Your max rerolls have increased by 1.");
+        break;
+        }
+        delay(1000);
+        player.printStats();
+        delay(1000);
+        combatOver = false;
+        enteringRoom = true;
+        resetButtons();
+        Serial.println("Press the right button to enter the next room.");
+        while(!rightButtonPressed);
+        resetButtons();
+        }
       }
   }
-  }
+}
   
   
+
+
+
+
+
+
+
+
+void resetButtons() {
+  delay(10);
+  leftButtonPressed = false;
+  rightButtonPressed = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -339,13 +501,10 @@ void loop() {
 // MIT License (https://opensource.org/licenses/MIT)
 
 int rollDiceAnimation(int maxRoll, int diceColor) {
-   bool loop = false;
-  
-  // rightButtonPressed = false;
+  bool loop = false;
   animationTimer.start(1000, AsyncDelay::MILLIS);
 
-  
-  // Compute a random number from 1 to 6
+  // Compute a random number from 1 to max roll
   rollNumber = random(1, maxRoll+1);
 
   if (!(animationTimer.isExpired())) {
