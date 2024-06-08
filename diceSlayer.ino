@@ -2,6 +2,7 @@
 #include <AsyncDelay.h>
 #include <time.h>
 #include <string>
+#include <climits>
 using namespace std;
 
 AsyncDelay animationTimer;
@@ -111,6 +112,57 @@ class Player {
     return totalRoll;
   }
 
+  void rollUpgrades() {
+        int lowerBound = 0;
+        if (maxRoll == 10) {
+          lowerBound = 1;
+        }
+        int upgradeLeft = random(lowerBound,4);
+        int upgradeRight = random(lowerBound,4);
+        while (upgradeLeft == upgradeRight) {
+          upgradeRight = random(lowerBound,4);
+        }
+
+        Serial.println("As a reward, you are presented the choice of two upgrades: ");
+        Serial.print(upgradeNames[upgradeLeft]);
+        Serial.println("  ---  Select this upgrade with the left button.");
+        Serial.print(upgradeNames[upgradeRight]);
+        Serial.println("  ---  Select this upgrade with the right button.");
+        
+        while (!leftButtonPressed && !rightButtonPressed);
+        int upgrade;
+        if (leftButtonPressed) {
+          resetButtons();
+          upgrade = upgradeLeft;
+        }  else if (rightButtonPressed) {
+          resetButtons();
+          upgrade = upgradeRight;
+        }
+        int lastValue;
+        Serial.print("Congratulations! ");
+        switch (upgrade) {
+        case 0:                             // increase player die by 2
+        maxRoll += 2;
+        Serial.print("You now roll a die with ");
+        Serial.print(maxRoll);
+        Serial.println(" sides!");
+        break;
+        case 1:                             // increase roll plus by 1
+        rollPlus++;
+        Serial.println("You now add an additional point to your roll.");
+        break;
+        case 2:                             // increase max hp by 1
+        maxHP++;
+        Serial.println("Your max HP has increased by 1.");
+        break;
+        case 3:                             // increase max rerolls by 1
+        maxReroll++;
+        rerollPerk = true;
+        Serial.println("Your max rerolls have increased by 1.");
+        break;
+        }
+  }
+
   int getHP() {
     return currentHP;
   }
@@ -160,6 +212,13 @@ class Player {
     remainingReroll = rerolls;
   }
 
+  void monsterSlain() {
+    monstersSlayed++;
+    if (monstersSlayed >= monstersNeededForLevelUp()) {
+      levelUp();
+    }
+  }
+
   private:
   int maxHP;
   int currentHP;
@@ -169,6 +228,22 @@ class Player {
   int remainingReroll;
   int maxReroll;
   int diceColor = 0xEA6292;
+  int level;
+  int monstersSlayed;
+
+  int monstersNeededForLevelUp() {
+    static int levelBreakpoints[11] = {0, 1, 3, 5, 8, 11, 15, 19, 24, 31, 40};
+    if (level >= 10) return INT_MAX;
+    return levelBreakpoints[level];
+
+  }
+
+  void levelUp() {
+    level++;
+    Serial.print("Congratulations! You reached level ");
+    Serial.println(level);
+    player.rollUpgrades();
+  }
 
   int doReroll(int currentTotal) {
     int rerollRoll = rollDiceAnimation(maxRoll, diceColor);
@@ -220,9 +295,6 @@ class Monster {
   int diceColor = 0xF10404;
 };
 
-
-
-
 Player player(3, 6, 0, 0); // initialize player
 Monster monster(0, 0, 0); // initalize monster
 // ISR
@@ -235,26 +307,6 @@ void leftISR() {
 void switchISR() {
   switchChange = true;
 }
-// Dice array
-// int dicePixelsD6[6][6] = {  // Pixel pattern for dice roll
-//   { 2, 0, 0, 0, 0, 0 } ,      // Roll = 1
-//   { 4, 9, 0, 0, 0, 0 } ,      //        2
-//   { 0, 4, 7, 0, 0, 0 } ,      //        3
-//   { 1, 3, 6, 8, 0, 0 } ,      //        4
-//   { 0, 2, 4, 5, 9, 0 } ,      //        5
-//   { 0, 2, 4, 5, 7, 9 } ,      //        6
-// };
-
-// int dicePixelsD8[8][8] = {  // Pixel pattern for dice roll
-//   { 2, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
-//   { 4, 9, 0, 0, 0, 0, 0, 0 } ,      //        2
-//   { 0, 4, 7, 0, 0, 0, 0, 0 } ,      //        3
-//   { 1, 3, 6, 8, 0, 0, 0, 0 } ,      //        4
-//   { 0, 2, 4, 5, 9, 0, 0, 0 } ,      //        5
-//   { 0, 2, 4, 5, 7, 9, 0, 0 } ,      //        6
-//   { 0, 1, 4, 5, 6, 8, 9, 0 } ,      //        7
-//   { 0, 1, 3, 4, 5, 6, 8, 9 } ,      //        8
-// };
 
 int dicePixelsD10[10][10] = {  // Pixel pattern for dice roll
   { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
@@ -406,7 +458,6 @@ void loop() {
         roomNumber++; 
         player.setRemainingRerolls(player.getMaxReroll());
         player.heal(player.getMaxHP());
-
         if (roomNumber > 5) {
           Serial.println("YOU HAVE WON THE GAME!");
           gameOver = true;
@@ -415,58 +466,7 @@ void loop() {
           delay(1000);
           }
         }
-        int lowerBound = 0;
-        if (player.getMaxRoll() == 10) {
-          lowerBound = 1;
-        }
-        int upgradeLeft = random(lowerBound,4);
-        int upgradeRight = random(lowerBound,4);
-        while (upgradeLeft == upgradeRight) {
-          upgradeRight = random(lowerBound,4);
-        }
-
-        Serial.println("As a reward, you are presented the choice of two upgrades: ");
-        Serial.print(upgradeNames[upgradeLeft]);
-        Serial.println("  ---  Select this upgrade with the left button.");
-        Serial.print(upgradeNames[upgradeRight]);
-        Serial.println("  ---  Select this upgrade with the right button.");
-        
-        while (!leftButtonPressed && !rightButtonPressed);
-        int upgrade;
-        if (leftButtonPressed) {
-          resetButtons();
-          upgrade = upgradeLeft;
-        }  else if (rightButtonPressed) {
-          resetButtons();
-          upgrade = upgradeRight;
-        }
-        int lastValue;
-        Serial.print("Congratulations! ");
-        switch (upgrade) {
-        case 0:                             // increase player die by 2
-        lastValue = player.getMaxRoll();
-        player.setMaxRoll(lastValue + 2);
-        Serial.print("You now roll a die with ");
-        Serial.print(player.getMaxRoll());
-        Serial.println(" sides!");
-        break;
-        case 1:                             // increase roll plus by 1
-        lastValue = player.getRollPlus();
-        player.setRollPlus(lastValue + 1);
-        Serial.println("You now add an additional point to your roll.");
-        break;
-        case 2:                             // increase max hp by 1
-        lastValue = player.getMaxHP();
-        player.setMaxHP(lastValue + 1);
-        Serial.println("Your max HP has increased by 1.");
-        break;
-        case 3:                             // increase max rerolls by 1
-        lastValue = player.getMaxReroll();
-        player.setMaxReroll(lastValue + 1);
-        player.setRerollPerk(true);
-        Serial.println("Your max rerolls have increased by 1.");
-        break;
-        }
+        player.rollUpgrades();
         delay(1000);
         player.printStats();
         delay(1000);
