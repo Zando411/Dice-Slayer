@@ -29,25 +29,25 @@ bool mute = false;
 
 // upgrades
 
-String upgradeNames[4] = {"Upgrade die by 2", "Add +1 to roll", "Increase max HP by 1", "Increase max reroll by 1"};
+String upgradeNames[4] = { "Upgrade die by 2", "Add +1 to roll", "Increase max HP by 1", "Increase max reroll by 1" };
 
 // PLayer Class
 
 class Player {
-  public:
+public:
   // Constructor
-  Player(int maxHP, int maxRoll, int rollPlus, int maxReroll):
-  maxHP(maxHP), currentHP(maxHP), maxRoll(maxRoll), rollPlus(rollPlus), rerollPerk(false), maxReroll(maxReroll) {}
+  Player(int maxHP, int maxRoll, int rollPlus, int maxReroll)
+    : maxHP(maxHP), currentHP(maxHP), maxRoll(maxRoll), rollPlus(rollPlus), rerollPerk(false), maxReroll(maxReroll) {}
 
 
-  void takeDamage(int damage) { // method to deal damage to player
+  void takeDamage(int damage) {  // method to deal damage to player
     currentHP -= damage;
     if (currentHP < 0) currentHP = 0;
   }
 
-  void heal(int amount) { // method to heal player
+  void heal(int amount) {  // method to heal player
     currentHP += amount;
-    if (currentHP > maxHP) currentHP = maxHP; 
+    if (currentHP > maxHP) currentHP = maxHP;
   }
 
   void printStats() {
@@ -61,7 +61,7 @@ class Player {
     Serial.print("Max Rerolls: ");
     Serial.println(maxReroll);
   }
-  
+
   int rollDice() {
     resetButtons();
     int roll = rollDiceAnimation(maxRoll, diceColor);
@@ -103,64 +103,87 @@ class Player {
             delay(500);
             Serial.println("Press the right button to continue.");
           }
-      } else if (rightButtonPressed) {
-        resetButtons();
-        break;
-      }
+        } else if (rightButtonPressed) {
+          resetButtons();
+          break;
+        }
       }
     }
     return totalRoll;
   }
 
   void rollUpgrades() {
-        int lowerBound = 0;
-        if (maxRoll == 10) {
-          lowerBound = 1;
-        }
-        int upgradeLeft = random(lowerBound,4);
-        int upgradeRight = random(lowerBound,4);
-        while (upgradeLeft == upgradeRight) {
-          upgradeRight = random(lowerBound,4);
-        }
+    int lowerBound = 0;
+    if (maxRoll == 10) {
+      lowerBound = 1;
+    }
+    int upgradeLeft = random(lowerBound, 4);
+    int upgradeRight = random(lowerBound, 4);
+    while (upgradeLeft == upgradeRight) {
+      upgradeRight = random(lowerBound, 4);
+    }
 
-        Serial.println("As a reward, you are presented the choice of two upgrades: ");
-        Serial.print(upgradeNames[upgradeLeft]);
-        Serial.println("  ---  Select this upgrade with the left button.");
-        Serial.print(upgradeNames[upgradeRight]);
-        Serial.println("  ---  Select this upgrade with the right button.");
-        
-        while (!leftButtonPressed && !rightButtonPressed);
-        int upgrade;
-        if (leftButtonPressed) {
-          resetButtons();
-          upgrade = upgradeLeft;
-        }  else if (rightButtonPressed) {
-          resetButtons();
-          upgrade = upgradeRight;
-        }
-        int lastValue;
-        Serial.print("Congratulations! ");
-        switch (upgrade) {
-        case 0:                             // increase player die by 2
+    Serial.println("As a reward, you are presented the choice of two upgrades: ");
+    Serial.print(upgradeNames[upgradeLeft]);
+    Serial.println("  ---  Select this upgrade with the left button.");
+    Serial.print(upgradeNames[upgradeRight]);
+    Serial.println("  ---  Select this upgrade with the right button.");
+
+    while (!leftButtonPressed && !rightButtonPressed)
+      ;
+    int upgrade;
+    if (leftButtonPressed) {
+      resetButtons();
+      upgrade = upgradeLeft;
+    } else if (rightButtonPressed) {
+      resetButtons();
+      upgrade = upgradeRight;
+    }
+    int lastValue;
+    Serial.print("Congratulations! ");
+    switch (upgrade) {
+      case 0:  // increase player die by 2
         maxRoll += 2;
         Serial.print("You now roll a die with ");
         Serial.print(maxRoll);
         Serial.println(" sides!");
         break;
-        case 1:                             // increase roll plus by 1
+      case 1:  // increase roll plus by 1
         rollPlus++;
         Serial.println("You now add an additional point to your roll.");
         break;
-        case 2:                             // increase max hp by 1
+      case 2:  // increase max hp by 1
         maxHP++;
         Serial.println("Your max HP has increased by 1.");
         break;
-        case 3:                             // increase max rerolls by 1
+      case 3:  // increase max rerolls by 1
         maxReroll++;
         rerollPerk = true;
         Serial.println("Your max rerolls have increased by 1.");
         break;
-        }
+    }
+    delay(1000);
+    printStats();
+  }
+
+  void monsterSlain() {
+    monstersSlayed++;
+    Serial.print("Monsters Slain: ");
+    Serial.println(monstersSlayed);
+    int neededForLevelup = monstersNeededForLevelUp();
+    if (monstersSlayed >= neededForLevelup) {
+      levelUp();
+    } else {
+      int remaining = neededForLevelup - monstersSlayed;
+      Serial.print("You need to slay ");
+      Serial.print(remaining);
+      if (remaining == 1) {
+        Serial.println(" more monster to level up.");
+      } else {
+        Serial.println(" more monsters to level up.");
+      }
+
+    }
   }
 
   int getHP() {
@@ -183,6 +206,10 @@ class Player {
     return maxReroll;
   }
 
+  int getLevel() {
+    return level;
+  }
+
   bool hasRerollPerk() {
     return rerollPerk;
   }
@@ -194,7 +221,7 @@ class Player {
   void setMaxRoll(int newMaxRoll) {
     maxRoll = newMaxRoll;
   }
-  
+
   void setRollPlus(int newRollPlus) {
     rollPlus = newRollPlus;
   }
@@ -212,14 +239,7 @@ class Player {
     remainingReroll = rerolls;
   }
 
-  void monsterSlain() {
-    monstersSlayed++;
-    if (monstersSlayed >= monstersNeededForLevelUp()) {
-      levelUp();
-    }
-  }
-
-  private:
+private:
   int maxHP;
   int currentHP;
   int maxRoll;
@@ -228,46 +248,44 @@ class Player {
   int remainingReroll;
   int maxReroll;
   int diceColor = 0xEA6292;
-  int level;
+  int level = 10;
   int monstersSlayed;
 
   int monstersNeededForLevelUp() {
-    static int levelBreakpoints[11] = {0, 1, 3, 5, 8, 11, 15, 19, 24, 31, 40};
+    static int levelBreakpoints[11] = { 0, 1, 3, 5, 8, 11, 15, 19, 24, 31, 40 };
     if (level >= 10) return INT_MAX;
     return levelBreakpoints[level];
-
   }
 
   void levelUp() {
     level++;
     Serial.print("Congratulations! You reached level ");
     Serial.println(level);
-    player.rollUpgrades();
+    rollUpgrades();
   }
 
   int doReroll(int currentTotal) {
     int rerollRoll = rollDiceAnimation(maxRoll, diceColor);
-      Serial.print("You rolled a ");
-      Serial.print(rerollRoll);
-      Serial.println("!");
-      currentTotal += rerollRoll;
-      remainingReroll--;
-      return currentTotal;
+    Serial.print("You rolled a ");
+    Serial.print(rerollRoll);
+    Serial.println("!");
+    currentTotal += rerollRoll;
+    remainingReroll--;
+    return currentTotal;
   }
-  
 };
 
 
 // monster class
 
 class Monster {
-  public:
+public:
   // Constructor
-  Monster(int hp, int maxRoll, int rollPlus):
-  hp(hp), maxRoll(maxRoll), rollPlus(rollPlus) {}
+  Monster(int hp, int maxRoll, int rollPlus)
+    : hp(hp), maxRoll(maxRoll), rollPlus(rollPlus) {}
 
 
-  void takeDamage(int damage) { // method to deal damage to monster
+  void takeDamage(int damage) {  // method to deal damage to monster
     hp -= damage;
     if (hp < 0) hp = 0;
   }
@@ -288,15 +306,70 @@ class Monster {
     return rollPlus;
   }
 
-  private:
+  void rollUpgrades(int playerLevel) {
+
+    if (playerLevel == 1) {
+      return;
+    }
+
+int lowerBound = 0;
+    
+
+for (int i = 0; i < playerLevel; i++ ){
+  if (maxRoll == 10) {
+      lowerBound = 1;
+    }
+int upgrade = random(lowerBound, 4);
+int nothingChance;
+if (upgrade == 3) {
+  if (playerLevel > 5) {
+    nothingChance = random(0,3);
+    if (nothingChance != 1) {
+      upgrade = random(lowerBound, 3);
+    }
+  } else if (playerLevel > 7) {
+    nothingChance = random(0,5);
+    if (nothingChance != 2) {
+      upgrade = random(lowerBound, 3);
+    } else if (playerLevel = 10)
+    nothingChance = random(0,9);
+    if (nothingChance != 5) {
+      upgrade = random(lowerBound, 3);
+  }
+}
+}
+
+    switch (upgrade) {
+      case 0:  // increase player die by 2
+        maxRoll += 2;
+        // Serial.println("monster max roll");
+        break;
+      case 1:  // increase roll plus by 1
+        rollPlus++;
+        // Serial.println("monster roll plus");
+        break;
+      case 2:  // increase hp by 1
+        hp++;
+        // Serial.println("monster hp");
+        break;
+      case 3:  // rolls no upgrade
+      // Serial.println("monster nothing");
+        break;
+    }
+}
+    
+    
+  }
+
+private:
   int hp;
   int maxRoll;
   int rollPlus;
   int diceColor = 0xF10404;
 };
 
-Player player(3, 6, 0, 0); // initialize player
-Monster monster(0, 0, 0); // initalize monster
+Player player(3, 6, 0, 0);  // initialize player
+Monster monster(0, 0, 0);   // initalize monster
 // ISR
 void rightISR() {
   rightButtonPressed = true;
@@ -308,17 +381,18 @@ void switchISR() {
   switchChange = true;
 }
 
-int dicePixelsD10[10][10] = {  // Pixel pattern for dice roll
-  { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 } ,      // Roll = 1
-  { 4, 9, 0, 0, 0, 0, 0, 0, 0, 0 } ,      //        2
-  { 0, 4, 7, 0, 0, 0, 0, 0, 0, 0 } ,      //        3
-  { 1, 3, 6, 8, 0, 0, 0, 0, 0, 0 } ,      //        4
-  { 0, 2, 4, 5, 9, 0, 0, 0, 0, 0 } ,      //        5
-  { 0, 2, 4, 5, 7, 9, 0, 0, 0, 0 } ,      //        6
-  { 0, 1, 4, 5, 6, 8, 9, 0, 0, 0 } ,      //        7
-  { 0, 1, 3, 4, 5, 6, 8, 9, 0, 0 } ,      //        8
-  { 0, 1, 2, 3, 4, 5, 6, 8, 9, 0 } ,      //        9
-  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 } ,      //        10
+int dicePixelsD10[10][10] = {
+  // Pixel pattern for dice roll
+  { 2, 0, 0, 0, 0, 0, 0, 0, 0, 0 },  // Roll = 1
+  { 4, 9, 0, 0, 0, 0, 0, 0, 0, 0 },  //        2
+  { 0, 4, 7, 0, 0, 0, 0, 0, 0, 0 },  //        3
+  { 1, 3, 6, 8, 0, 0, 0, 0, 0, 0 },  //        4
+  { 0, 2, 4, 5, 9, 0, 0, 0, 0, 0 },  //        5
+  { 0, 2, 4, 5, 7, 9, 0, 0, 0, 0 },  //        6
+  { 0, 1, 4, 5, 6, 8, 9, 0, 0, 0 },  //        7
+  { 0, 1, 3, 4, 5, 6, 8, 9, 0, 0 },  //        8
+  { 0, 1, 2, 3, 4, 5, 6, 8, 9, 0 },  //        9
+  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },  //        10
 };
 
 void setup() {
@@ -331,7 +405,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(switchPin), switchISR, CHANGE);
   randomSeed(time(0) + CircuitPlayground.lightSensor());
 
-  while(!Serial); 
+  while (!Serial)
+    ;
   delay(500);
   Serial.println("Welcome to Dice Slayer!");
   delay(1000);
@@ -341,68 +416,68 @@ void setup() {
 }
 
 void loop() {
-  if (!gameStarted) { // check if game has not started
+  if (!gameStarted) {  // check if game has not started
     if (switchChange) {
-    delay(5);
-    endlessMode = digitalRead(switchPin); // set game mode based on switch
-    
-    Serial.print("You have selected: ");
-    if (endlessMode) Serial.println("Endless Mode");
-    else if (!endlessMode) Serial.println("Story Mode");
+      delay(5);
+      endlessMode = digitalRead(switchPin);  // set game mode based on switch
 
-    switchChange = false;
-  }
-  if (rightButtonPressed) {
-    delay(300);
-    Serial.println("Let the game begin!");
-    delay(1000);
-    gameStarted = true;
-    resetButtons();
-  }
+      Serial.print("You have selected: ");
+      if (endlessMode) Serial.println("Endless Mode");
+      else if (!endlessMode) Serial.println("Story Mode");
+
+      switchChange = false;
+    }
+    if (rightButtonPressed) {
+      delay(300);
+      Serial.println("Let the game begin!");
+      delay(1000);
+      gameStarted = true;
+      resetButtons();
+    }
   }
   if (gameStarted) {
-    if (!endlessMode) { // Story mode
-      if (!combatOver) { // if combat is still active
+    if (!endlessMode) {   // Story mode
+      if (!combatOver) {  // if combat is still active
         if (enteringRoom) {
-        player.setRemainingRerolls(player.getMaxReroll());
-        delay(1000);
-        Serial.print("You enter into room number: ");
-        Serial.println(roomNumber);
-        switch (roomNumber) {
-          case 1:
-          {
-          monster = Monster(2, 4, 0);
-          break;
-          }
-          
-          case 2:
-          {
-          monster = Monster(3, 6, 0);
-          break;
-          }
-          case 3:
-          {
-          monster = Monster(3, 8, 1);
-          break;
-          }
-          case 4:
-          {
-          monster = Monster(4, 6, 2);
-          break;
-          }
-          case 5:
-          {
-          monster = Monster(3, 10, 2);
-          break;
-          }
-         }
-        delay(1000);
-        Serial.print("In front of you, you see a monster");
-        for (int i = 0; i < 3; i++) {
+          player.setRemainingRerolls(player.getMaxReroll());
           delay(1000);
-          Serial.print(".");
-        }
-        Serial.println("and it attacks!");
+          Serial.print("You enter into room number: ");
+          Serial.println(roomNumber);
+          switch (roomNumber) {
+            case 1:
+              {
+                monster = Monster(2, 4, 0);
+                break;
+              }
+
+            case 2:
+              {
+                monster = Monster(3, 6, 0);
+                break;
+              }
+            case 3:
+              {
+                monster = Monster(3, 8, 1);
+                break;
+              }
+            case 4:
+              {
+                monster = Monster(4, 6, 2);
+                break;
+              }
+            case 5:
+              {
+                monster = Monster(3, 10, 2);
+                break;
+              }
+          }
+          delay(1000);
+          Serial.print("In front of you, you see a monster");
+          for (int i = 0; i < 3; i++) {
+            delay(1000);
+            Serial.print(".");
+          }
+          Serial.println("and it attacks!");
         }
         if (!enteringRoom) {
           delay(1000);
@@ -410,7 +485,82 @@ void loop() {
         }
         enteringRoom = false;
         int monsterRoll = monster.rollDice();
-        while(!animationTimer.isExpired());
+        while (!animationTimer.isExpired())
+          ;
+        Serial.print("It rolled a ");
+        Serial.print(monsterRoll);
+        Serial.println("!");
+        delay(1000);
+        resetButtons();
+        Serial.println("Press the right button to fight back!");
+
+        while (!rightButtonPressed)
+          ;
+        resetButtons();
+        int playerRoll = player.rollDice();
+        
+        findWinner(playerRoll, monsterRoll);
+
+      } else if (combatOver) {
+        resetButtons();
+        roomNumber++;
+        player.setRemainingRerolls(player.getMaxReroll());
+        player.heal(player.getMaxHP());
+        if (roomNumber > 5) {
+          Serial.println("YOU HAVE WON THE GAME!");
+          gameOver = true;
+          while (gameOver) {
+            Serial.println("game over");
+            delay(1000);
+          }
+        }
+        player.rollUpgrades();
+        delay(1000);
+        
+        combatOver = false;
+        enteringRoom = true;
+        resetButtons();
+        Serial.println("Press the right button to enter the next room.");
+        while (!rightButtonPressed)
+          ;
+        resetButtons();
+      }
+    } else if (endlessMode) {
+      if (!combatOver) {  // if combat is still active
+        if (enteringRoom) {
+          player.setRemainingRerolls(player.getMaxReroll());
+          delay(1000);
+          Serial.print("You enter into room number: ");
+          Serial.println(roomNumber);
+          
+          if (player.getLevel() <= 3) {
+            monster = Monster(2, 4, 0);
+          }  else if (player.getLevel() <= 7) {
+            monster = Monster(2, 6, 0);
+          } else {
+            monster = Monster(3, 6, 1);
+          }
+          
+
+           // generate monster based on level
+           monster.rollUpgrades(player.getLevel());
+
+
+          delay(1000);
+          Serial.print("In front of you, you see a monster");
+          for (int i = 0; i < 3; i++) {
+            delay(1000);
+            Serial.print(".");
+          }
+          Serial.println("and it attacks!");
+        }
+        if (!enteringRoom) {
+          delay(1000);
+          Serial.println("The monster goes for another strike...");
+        }
+        enteringRoom = false;
+        int monsterRoll = monster.rollDice();
+        while (!animationTimer.isExpired());
         Serial.print("It rolled a ");
         Serial.print(monsterRoll);
         Serial.println("!");
@@ -422,7 +572,44 @@ void loop() {
         resetButtons();
         int playerRoll = player.rollDice();
 
-        if (playerRoll >= monsterRoll) {
+        findWinner(playerRoll, monsterRoll);
+        
+      } else if (combatOver) {
+        resetButtons();
+        roomNumber++;
+        player.setRemainingRerolls(player.getMaxReroll());
+        player.heal(player.getMaxHP());
+        player.monsterSlain();
+        
+        delay(1000);
+        combatOver = false;
+        enteringRoom = true;
+        resetButtons();
+        Serial.println("Press the right button to enter the next room.");
+        while (!rightButtonPressed);
+        resetButtons();
+      }
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+void resetButtons() {
+  delay(10);
+  leftButtonPressed = false;
+  rightButtonPressed = false;
+}
+
+void findWinner(int playerRoll, int monsterRoll) {
+  if (playerRoll >= monsterRoll) {
           monster.takeDamage(1);
           Serial.println("You rolled higher than the monster!");
           delay(1000);
@@ -449,56 +636,15 @@ void loop() {
           } else if (player.getHP() == 0) {
             gameOver = true;
             while (gameOver) {
-            Serial.println("You have died to the monster!");
+              Serial.println("You have died to the monster!");
             }
           }
-        } 
-      } else if (combatOver) {
-        resetButtons();
-        roomNumber++; 
-        player.setRemainingRerolls(player.getMaxReroll());
-        player.heal(player.getMaxHP());
-        if (roomNumber > 5) {
-          Serial.println("YOU HAVE WON THE GAME!");
-          gameOver = true;
-          while (gameOver) {
-          Serial.println("game over");
-          delay(1000);
-          }
         }
-        player.rollUpgrades();
-        delay(1000);
-        player.printStats();
-        delay(1000);
-        combatOver = false;
-        enteringRoom = true;
-        resetButtons();
-        Serial.println("Press the right button to enter the next room.");
-        while(!rightButtonPressed);
-        resetButtons();
-        }
-      }
-  }
-}
-  
-  
-
-
-
-
-
-
-
-
-void resetButtons() {
-  delay(10);
-  leftButtonPressed = false;
-  rightButtonPressed = false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Circuit Playground Dice
-// 
+//
 // Modified to be used with a button input and to be only called once rather than looped.
 //
 // Author: Carter Nelson
@@ -509,7 +655,7 @@ int rollDiceAnimation(int maxRoll, int diceColor) {
   animationTimer.start(1000, AsyncDelay::MILLIS);
 
   // Compute a random number from 1 to max roll
-  rollNumber = random(1, maxRoll+1);
+  rollNumber = random(1, maxRoll + 1);
 
   if (!(animationTimer.isExpired())) {
     loop = true;
@@ -517,24 +663,24 @@ int rollDiceAnimation(int maxRoll, int diceColor) {
 
   if (switchChange) {
     delay(5);
-    mute = digitalRead(switchPin); // set game mode based on switch
+    mute = digitalRead(switchPin);  // set game mode based on switch
 
     switchChange = false;
   }
 
   // Display status on NeoPixels
   while (loop) {
-    int animationRollNumber = random(1,maxRoll+1);
+    int animationRollNumber = random(1, maxRoll + 1);
     // Make some noise and show the dice roll number
     if (!mute) {
-    //CircuitPlayground.playTone(random(400,2000), 20, false); 
-    } 
-    CircuitPlayground.clearPixels();
-    for (int p=0; p<animationRollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD10[animationRollNumber-1][p], diceColor);
+      //CircuitPlayground.playTone(random(400,2000), 20, false);
     }
-    
-    delay(100);    
+    CircuitPlayground.clearPixels();
+    for (int p = 0; p < animationRollNumber; p++) {
+      CircuitPlayground.setPixelColor(dicePixelsD10[animationRollNumber - 1][p], diceColor);
+    }
+
+    delay(100);
     if (animationTimer.isExpired()) {
       loop = false;
     }
@@ -543,8 +689,8 @@ int rollDiceAnimation(int maxRoll, int diceColor) {
   if (animationTimer.isExpired()) {
     // Show the dice roll number
     CircuitPlayground.clearPixels();
-    for (int p=0; p<rollNumber; p++) {
-      CircuitPlayground.setPixelColor(dicePixelsD10[rollNumber-1][p], diceColor);
+    for (int p = 0; p < rollNumber; p++) {
+      CircuitPlayground.setPixelColor(dicePixelsD10[rollNumber - 1][p], diceColor);
     }
   }
   return rollNumber;
